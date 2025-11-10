@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ban WhatsApp - Simulasi Aman</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Poppins",sans-serif;
+    height:100vh;display:flex;align-items:center;justify-content:center;
+    color:#000;background:#000;overflow:hidden;
+  }
+  canvas{position:fixed;inset:0;width:100%;height:100%;z-index:-2}
+  
+  /* overlay depan warna putih transparan */
+  .overlay-box {
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    z-index:-1;
+  }
+
+  .container{
+    width:92%;max-width:420px;margin:auto;text-align:center;
+    background:rgba(255,255,255,0.25);
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:15px;
+    box-shadow:0 0 20px rgba(255,255,255,0.3);
+    padding:20px;
+    color:#000;
+  }
+
+  .avatar{
+    width:110px;height:110px;border-radius:50%;margin:12px auto 10px;
+    border:3px solid rgba(0,0,0,0.1);
+    box-shadow:0 8px 25px rgba(0,0,0,0.15);
+    background:url('https://i.ibb.co/hFJWVgbd/images-1.jpg') center/cover no-repeat;
+  }
+
+  h1{font-size:15px;margin-bottom:16px;text-shadow:0 1px 5px rgba(255,255,255,0.4)}
+
+  .buttons{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:6px}
+  .btn{
+    width:220px;padding:12px;border-radius:10px;
+    border:1px solid rgba(0,0,0,0.2);
+    background:rgba(255,255,255,0.7);
+    color:#000;font-weight:600;cursor:pointer;
+    backdrop-filter:blur(4px);
+  }
+
+  .hidden{display:none}
+
+  .form{
+    background:rgba(255,255,255,0.35);
+    padding:18px;border-radius:12px;
+    border:1px solid rgba(255,255,255,0.3);
+    box-shadow:0 10px 40px rgba(0,0,0,0.15);
+  }
+
+  label{display:block;text-align:left;color:#111;margin-top:8px;font-size:13px}
+  input,select,textarea{
+    width:100%;padding:10px;border-radius:8px;
+    border:1px solid rgba(0,0,0,0.2);
+    background:rgba(255,255,255,0.7);
+    color:#000;margin-top:6px;font-size:14px;
+  }
+  textarea{min-height:110px;resize:vertical}
+
+  .primary{
+    margin-top:12px;padding:12px;border-radius:8px;border:none;
+    background:linear-gradient(90deg,#00ff7a,#00d4ff);
+    color:#000;font-weight:700;cursor:pointer;
+  }
+
+  .row{display:flex;gap:8px;margin-top:10px}
+  .row button{flex:1;padding:10px;border-radius:8px;
+    border:1px solid rgba(0,0,0,0.2);
+    background:rgba(255,255,255,0.6);color:#000;cursor:pointer}
+  .small{font-size:12px;color:#222;margin-top:8px}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div class="overlay-box"></div>
+
+<div class="container" id="main">
+  <div class="avatar"></div>
+  <h1>WELLCOME TO X-BANNED AND UNBANNED</h1>
+  <div class="buttons">
+    <button class="btn" id="open-banned">- BANNED -</button>
+    <button class="btn" id="open-unbanned">- UNBANNED -</button>
+    <button class="btn" id="open-riset">- RISET OTP -</button>
+    <button class="btn" id="open-dev">- DEVELOPER -</button>
+  </div>
+</div>
+
+<div class="container hidden" id="bannedPage">
+  <div class="form">
+    <h1 style="margin-bottom:8px">Ban WhatsApp By Puttz</h1>
+
+    <label for="reporterName">Nama Pelapor (Nama Anda)</label>
+    <input id="reporterName" placeholder="Masukkan nama Anda"/>
+
+    <label for="reporterPhone">Nomor Pelapor (Nomor Anda)</label>
+    <input id="reporterPhone" placeholder="+62xxxxxxxx"/>
+
+    <label for="targetPhone">Nomor Pelaku / Yang Dilaporkan</label>
+    <input id="targetPhone" placeholder="+62xxxxxxxx"/>
+
+    <label for="template">Pilih jenis pesan</label>
+    <select id="template">
+      <option value="spam">Laporan Spam Konten Judi</option>
+      <option value="scam">Laporan Penipuan</option>
+      <option value="abuse">Laporan Pelecehan</option>
+    </select>
+
+    <label for="body">Isi pesan / lampiran (dapat diedit)</label>
+    <textarea id="body"></textarea>
+
+    <button class="primary" id="sendMail">KIRIM BANDING / LAPOR</button>
+
+    <div class="row">
+      <button id="previewBtn">Preview</button>
+      <button id="copyBtn">Salin</button>
+    </div>
+
+    <div class="small">Tombol di atas hanya membuka draf email (tidak mengirim otomatis).</div>
+    <div style="margin-top:10px">
+      <button id="backBtn" style="width:100%;padding:10px;border-radius:8px;
+      border:1px solid rgba(0,0,0,0.2);
+      background:rgba(255,255,255,0.6);color:#000">KEMBALI</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Matrix background
+const canvas=document.getElementById('matrix');
+const ctx=canvas.getContext('2d');
+let fontSize=16;
+let letters="01@#$%^&*ABCDEFGhjklmnopqrstuvwxyz0123456789";
+let cols,drops;
+function resize(){
+  canvas.width=innerWidth;canvas.height=innerHeight;
+  cols=Math.floor(canvas.width/fontSize);
+  drops=Array(cols).fill(0);
+}
+resize();window.addEventListener('resize',resize);
+function draw(){
+  ctx.fillStyle="rgba(0,0,0,0.06)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#0f0";
+  ctx.font=fontSize+"px monospace";
+  for(let i=0;i<drops.length;i++){
+    const text=letters.charAt(Math.floor(Math.random()*letters.length));
+    ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+    if(drops[i]*fontSize>canvas.height && Math.random()>0.975)drops[i]=0;
+    drops[i]++;
+  }
+}
+setInterval(draw,33);
+
+// UI
+const main=document.getElementById('main');
+const bannedPage=document.getElementById('bannedPage');
+document.getElementById('open-banned').onclick=()=>{main.classList.add('hidden');bannedPage.classList.remove('hidden');fillTemplate();}
+document.getElementById('open-unbanned').onclick=()=>window.open('https://unband-no-wa.vercel.app/','_blank');
+document.getElementById('open-riset').onclick=()=>alert('Simulasi Riset OTP.');
+document.getElementById('open-dev').onclick=()=>alert('Dev: Puttz\nTanggal: '+new Date().toLocaleDateString('id-ID'));
+document.getElementById('backBtn').onclick=()=>{bannedPage.classList.add('hidden');main.classList.remove('hidden');};
+
+// form
+const reporterName=document.getElementById('reporterName');
+const reporterPhone=document.getElementById('reporterPhone');
+const targetPhone=document.getElementById('targetPhone');
+const templateSel=document.getElementById('template');
+const bodyEl=document.getElementById('body');
+function composeSpam(){
+  return `Subjek: Laporan Spam Konten Judi
+
+Kepada Tim WhatsApp,
+
+Saya ingin melaporkan nomor ${targetPhone.value||'[Nomor Spammer]'} karena mengirim spam link judi online.
+
+Detail Pelapor:
+- Nama: ${reporterName.value||'[Nama Anda]'}
+- Nomor: ${reporterPhone.value||'[Nomor Anda]'}
+
+Kronologi:
+Pengguna tersebut mengirim pesan berisi link judi tanpa diminta. Mohon tindakan lebih lanjut.
+
+Terima kasih.`;
+}
+function composeScam(){return `Subjek: Laporan Penipuan\n\nNomor: ${targetPhone.value||'[Nomor Spammer]'}\nMohon investigasi.`;}
+function composeAbuse(){return `Subjek: Laporan Pelecehan\n\nNomor: ${targetPhone.value||'[Nomor Spammer]'}\nMohon ditindaklanjuti.`;}
+function fillTemplate(){
+  if(templateSel.value==='spam')bodyEl.value=composeSpam();
+  else if(templateSel.value==='scam')bodyEl.value=composeScam();
+  else bodyEl.value=composeAbuse();
+}
+[reporterName,reporterPhone,targetPhone,templateSel].forEach(e=>e.addEventListener('input',fillTemplate));
+
+document.getElementById('previewBtn').onclick=()=>alert(bodyEl.value||'Kosong');
+document.getElementById('copyBtn').onclick=async()=>{await navigator.clipboard.writeText(bodyEl.value||'');alert('Teks disalin');};
+
+// KIRIM (draf email)
+document.getElementById('sendMail').onclick=()=>{
+  const subject='Laporan Spam Konten Judi';
+  const body=encodeURIComponent(bodyEl.value||composeSpam());
+  const email='support@whatsapp.com'; 
+  const mailto=`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+  window.location.href=mailto;
+};
+</script>
+</body>
+</html>
